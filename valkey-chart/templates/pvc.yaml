@@ -1,0 +1,13 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "valkey.fullname" . }}-data
+  labels:
+{{ include "valkey.labels" . | indent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+{{- end }}

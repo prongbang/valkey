@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "valkey.fullname" . }}
+  labels:
+{{ include "valkey.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+{{ include "valkey.labels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "valkey.labels" . | indent 8 }}
+    spec:
+      containers:
+        - name: valkey
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "valkey-server"
+            - "/etc/valkey/valkey.conf"
+            - "--dir"
+            - "/data"
+            {{- if .Values.auth.enabled }}
+            - "--requirepass"
+            - "$(VALKEY_PASSWORD)"
+            {{- end }}
+          env:
+            {{- if .Values.auth.enabled }}
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-auth" (include "valkey.fullname" .)) .Values.auth.existingSecret }}
+                  key: password
+            {{- end }}
+          ports:
+            - name: tcp-valkey
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - >
+                  {{- if .Values.auth.enabled -}}
+                  valkey-cli -a "$VALKEY_PASSWORD" -3 ping | grep PONG
+                  {{- else -}}
+                  valkey-cli -3 ping | grep PONG
+                  {{- end -}}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: inline-config
+              mountPath: /etc/valkey
+      volumes:
+        - name: inline-config
+          configMap:
+            name: {{ include "valkey.fullname" . }}-config
+            items:
+              - key: valkey.conf
+                path: valkey.conf
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "valkey.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

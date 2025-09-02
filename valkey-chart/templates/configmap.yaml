@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "valkey.fullname" . }}-config
+  labels:
+{{ include "valkey.labels" . | indent 4 }}
+data:
+  valkey.conf: |
+{{ .Values.config.valkeyConf | indent 4 }}

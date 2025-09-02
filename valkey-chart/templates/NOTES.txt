@@ -1,0 +1,9 @@
+Valkey endpoint:
+  {{ include "valkey.fullname" . }}:{{ .Values.service.port }}
+
+Auth:
+  {{- if .Values.auth.enabled -}}
+  Enabled (secret: {{ default (printf "%s-auth" (include "valkey.fullname" .)) .Values.auth.existingSecret }})
+  {{- else -}}
+  Disabled
+  {{- end }}

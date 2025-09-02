@@ -1,0 +1,37 @@
+image:
+  repository: valkey/valkey
+  tag: 8.1-alpine
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: LoadBalancer
+  port: 6379
+  annotations: {}
+
+auth:
+  enabled: false
+  existingSecret: ""
+  password: "" # ใช้เมื่อ enabled=true และไม่มี existingSecret
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+persistence:
+  enabled: false
+
+config:
+  valkeyConf: |
+    port 6379
+    daemonize no
+    protected-mode yes
+    appendonly yes
+    appendfsync everysec
+    save 60 1000
+    loglevel notice
